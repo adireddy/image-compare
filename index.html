@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <title>Image Compare</title>
+
+    <script src="libs/pixelmatch.js"></script>
+
+    <link rel="stylesheet" href="css/skeleton.css">
+
+    <style>
+        html,body { margin: 0; padding: 0; width: 100%; height: 100%; }
+    </style>
+
+</head>
+<body>
+
+<div class="container">
+    <div class="row" style="margin-top: 2%; margin-bottom: 2%">
+        <div id="title" style="background-color: #33C3F0;" class="twelve columns title" align="center">IMAGE COMPARISION TOOL</div>
+    </div>
+    <div class="row">
+        <div class="five columns">
+            <label for="url1">URL 1:</label>
+            <input type="text" class="u-full-width" id="url1" value="assets/img1.png" />
+        </div>
+        <div class="five columns">
+            <label for="url2">URL 2:</label>
+            <input type="text" class="u-full-width" id="url2" value="assets/img2.png" />
+        </div>
+
+        <div class="two columns">
+            <label for="load">&nbsp;</label>
+            <button id="load" class="button-primary u-full-width" type="button" onclick="init()">LOAD</button>
+        </div>
+
+        <div id="compare" style="background-color: #E1E1E1" class="twelve columns"></div>
+
+        <div id="img1Canvas" class="twelve columns">
+            <canvas id="img1" style="visibility: hidden; border: double" class="u-full-width"></canvas>
+        </div>
+
+        <div id="img2Canvas" class="twelve columns">
+            <canvas id="img2" style="visibility: hidden; border: dotted" class="u-full-width"></canvas>
+        </div>
+
+        <div id="img3Canvas" class="twelve columns">
+            <canvas id="diff" style="visibility: hidden; border: dashed" class="u-full-width"></canvas>
+        </div>
+
+        <div id="origImg" class="twelve columns"></div>
+
+    </div>
+</div>
+
+<script>
+    var orig;
+    var canv1;
+    var canv2;
+    var canv3;
+
+    function init() {
+        var url1 = document.getElementById("url1").value;
+        var url2 = document.getElementById("url2").value;
+
+        var compare = document.getElementById("compare");
+        compare.innerHTML = "";
+
+        var juxtapose = document.createElement("div");
+        juxtapose.className = "juxtapose";
+
+        var im1 = document.createElement("img");
+        im1.src = url1;
+        juxtapose.appendChild(im1);
+
+        var im2 = document.createElement("img");
+        im2.src = url2;
+        juxtapose.appendChild(im2);
+
+        var juxtaposeWrapper = document.createElement("div");
+        juxtaposeWrapper.id = "juxtapose-wrapper";
+        juxtaposeWrapper.className = "juxtapose";
+        juxtaposeWrapper.setAttribute("data-startingposition", "50%");
+        juxtaposeWrapper.setAttribute("data-showlabels", "false");
+        juxtaposeWrapper.setAttribute("data-showcredits", "false");
+        juxtaposeWrapper.setAttribute("data-animate", "false");
+
+        juxtaposeWrapper.appendChild(juxtapose);
+
+        compare.appendChild(juxtaposeWrapper);
+
+        var juxtaposeScript = document.createElement("script");
+        juxtaposeScript.src = "libs/juxtapose.js";
+
+        var juxtaposeStyle = document.createElement("link");
+        juxtaposeStyle.rel = "stylesheet";
+        juxtaposeStyle.href = "css/juxtapose.css";
+
+        document.body.appendChild(juxtaposeScript);
+        document.body.appendChild(juxtaposeStyle);
+
+        orig = document.createElement("img");
+        orig.id = "orig";
+        orig.style = "visibility: hidden;";
+        orig.src = url1;
+
+        document.getElementById("origImg").innerHTML = "";
+        document.getElementById("origImg").appendChild(orig);
+
+        canv1 = document.getElementById("img1");
+        canv2 = document.getElementById("img2");
+        canv3 = document.getElementById("diff");
+
+        canv1.style.visibility = "hidden";
+        canv2.style.visibility = "hidden";
+        canv3.style.visibility = "hidden";
+
+        canv1.getContext("2d").clearRect(0, 0, canv1.width, canv1.height);
+        canv2.getContext("2d").clearRect(0, 0, canv2.width, canv2.height);
+        canv3.getContext("2d").clearRect(0, 0, canv3.width, canv3.height);
+
+        orig.onload = function () {
+            setTimeout(draw, 1000);
+        };
+    }
+
+    function draw() {
+        var img1Ctx = canv1.getContext("2d");
+        var img2Ctx = canv2.getContext("2d");
+        var diffCtx = canv3.getContext("2d");
+
+        img1Ctx.clearRect(0, 0, canv1.width, canv1.height);
+        img2Ctx.clearRect(0, 0, canv2.width, canv2.height);
+        diffCtx.clearRect(0, 0, canv3.width, canv3.height);
+
+        var img1 = document.getElementsByClassName("jx-image jx-left")[0].children[0];
+        var img2 = document.getElementsByClassName("jx-image jx-right")[0].children[0];
+        var width = orig.width;
+        var height = orig.height;
+
+        canv1.width = width;
+        canv1.height = height;
+
+        canv2.width = width;
+        canv2.height = height;
+
+        canv3.width = width;
+        canv3.height = height;
+
+        img1Ctx.drawImage(img1, 0, 0);
+        img2Ctx.drawImage(img2, 0, 0);
+
+        var img1 = img1Ctx.getImageData(0, 0, width, height);
+        var img2 = img2Ctx.getImageData(0, 0, width, height);
+        var diff = diffCtx.createImageData(width, height);
+
+        pixelmatch(img1.data, img2.data, diff.data, width, height, { threshold: 0.05, includeAA:true });
+
+        diffCtx.putImageData(diff, 0, 0);
+
+        orig.width = 1;
+        orig.height = 1;
+
+        canv1.style.visibility = "visible";
+        canv2.style.visibility = "visible";
+        canv3.style.visibility = "visible";
+    }
+
+</script>
+
+</body>
+</html>
